@@ -26,7 +26,34 @@ class Activation_SoftMax:
         probabilities = exp_values / np.sum(exp_values, axis = 1, keepdims=True)
         self.output = probabilities
         return self.output
+    
+
         
+class Loss_CategoricalCrossEntropy:
+    def forward(self, y_pred, y_true):
+        samples = len(y_pred)
+        y_pred_clipped = np.clip(y_pred, 1e-7, 1 - 1e-7)
+        if len(y_true.shape) == 1:
+            correct_confidences = y_pred_clipped[
+                range(samples),
+                y_true
+                ]
+        elif len(y_true.shape) == 2:
+            correct_confidences = np.sum(
+                y_pred_clipped * y_true,
+                axis = 1
+                )
+
+        negative_log_likelihoods = -np.log(correct_confidences)
+        return negative_log_likelihoods
+    
+class Loss:
+    def calculate(self, output, y):
+        sample_losses = Loss_CategoricalCrossEntropy.forward(self,output, y)
+        data_loss = np.mean(sample_losses)
+        return data_loss
+    
+    
 #Dataset building function
 def spiral_data(N,K):
     D = 2
@@ -81,6 +108,7 @@ active_ReLU = Activation1.forward(layer2_output)
 
 active_SoftMax = Activation2.forward(layer2_output)
 
+loss_function = Loss()
 #printing ReLU activated outputs
 print("ReLU activated outputs:")
 print(active_ReLU[0:5,:])
@@ -91,5 +119,7 @@ print('\n')
 print("SoftMax activated outputs:")
 print(active_SoftMax[0:5,:])
 
-
+loss = loss_function.calculate(active_SoftMax, y)
+print('\n')
+print('loss:', loss)
 
